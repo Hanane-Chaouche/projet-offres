@@ -24,16 +24,13 @@ pipeline {
                     if not exist logs (
                         mkdir logs
                     )
+                    if not exist public (
+                        mkdir public
+                    )
 
-                    rem -- Vérifier que le dossier logs est bien accessible
-                    if exist logs (
-                        rem -- Créer un en-tête si log.txt n’existe pas
-                        if not exist logs\\log.txt (
-                            echo ===== Journal du pipeline Jenkins ===== > logs\\log.txt
-                        )
-                    ) else (
-                        echo Erreur : le dossier logs n’a pas pu être créé. >> CON
-                        exit /b 1
+                    rem -- Créer un en-tête si log.txt n’existe pas
+                    if not exist logs\\log.txt (
+                        echo ===== Journal du pipeline Jenkins ===== > logs\\log.txt
                     )
 
                     rem -- Si première exécution, copie initiale
@@ -77,8 +74,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline terminé localement"
+            echo " Pipeline terminé localement"
         }
     }
 }
-
