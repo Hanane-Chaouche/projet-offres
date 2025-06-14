@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Installer les dépendances') {
+        stage('Installer les dependances') {
             steps {
                 bat 'pip install -r requirements.txt'
             }
@@ -14,28 +14,29 @@ pipeline {
             }
         }
 
-        stage('Détection de changements') {
+        stage('Detection changements') {
             steps {
                 bat '''
-                    rem -- Créer les dossiers si nécessaires
+                    rem -- Creer les dossiers si necessaires
                     if not exist data (
                         mkdir data
                     )
                     if not exist logs (
                         mkdir logs
+                        timeout /t 1 >nul
                     )
                     if not exist public (
                         mkdir public
                     )
 
-                    rem -- Créer un en-tête si log.txt n’existe pas
+                    rem -- Creer un entete dans log.txt si necessaire
                     if not exist logs\\log.txt (
                         echo ===== Journal du pipeline Jenkins ===== > logs\\log.txt
                     )
 
-                    rem -- Si première exécution, copie initiale
+                    rem -- Premiere execution : copie initiale
                     if not exist data\\jobs_previous.csv (
-                        echo [%date% %time%] Première exécution : copie initiale >> logs\\log.txt
+                        echo [%date% %time%] Premiere execution : copie initiale >> logs\\log.txt
                         copy data\\jobs.csv data\\jobs_previous.csv
                         exit /b 0
                     )
@@ -48,18 +49,18 @@ pipeline {
                     for /f "tokens=1" %%A in (old_hash.txt) do set OLD_HASH=%%A
 
                     if "%NEW_HASH%" == "%OLD_HASH%" (
-                        echo [%date% %time%] Aucune nouvelle offre détectée. >> logs\\log.txt
+                        echo [%date% %time%] Aucune nouvelle offre detectee. >> logs\\log.txt
                         exit /b 0
                     ) else (
-                        echo [%date% %time%] Nouvelles offres détectées. >> logs\\log.txt
+                        echo [%date% %time%] Nouvelles offres detectees. >> logs\\log.txt
                         copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
-                        echo [%date% %time%] Rapport HTML mis à jour. >> logs\\log.txt
+                        echo [%date% %time%] Rapport HTML mis a jour. >> logs\\log.txt
                     )
                 '''
             }
         }
 
-        stage('Générer HTML') {
+        stage('Generer HTML') {
             steps {
                 bat 'python html_generator.py'
             }
@@ -74,7 +75,7 @@ pipeline {
 
     post {
         always {
-            echo " Pipeline terminé localement"
+            echo "Pipeline termine localement"
         }
     }
 }
