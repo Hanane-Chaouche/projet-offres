@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Installer les dépendances') {
+        stage('Installer les dependances') {
             steps {
                 bat 'pip install -r requirements.txt'
             }
@@ -12,12 +12,12 @@ pipeline {
             steps {
                 bat '''
                     echo Dossier courant : %cd%
-
                     if not exist data mkdir data
                     if not exist logs mkdir logs
                     if not exist public mkdir public
 
-                    ping 127.0.0.1 -n 4 >nul
+                    rem Attente pour que les dossiers soient prêts
+                    timeout /t 2 >nul
                 '''
             }
         }
@@ -31,9 +31,7 @@ pipeline {
         stage('Détection de changements') {
             steps {
                 bat '''
-                    if not exist logs\\log.txt (
-                        echo ===== Journal du pipeline Jenkins ===== > logs\\log.txt
-                    )
+                    if not exist logs\\log.txt echo ===== Journal du pipeline Jenkins ===== > logs\\log.txt
 
                     if not exist data\\jobs_previous.csv (
                         echo [%date% %time%] Premiere execution : copie initiale >> logs\\log.txt
@@ -49,7 +47,6 @@ pipeline {
 
                     if "%NEW_HASH%" == "%OLD_HASH%" (
                         echo [%date% %time%] Aucune nouvelle offre detectee. >> logs\\log.txt
-                        exit /b 0
                     ) else (
                         echo [%date% %time%] Nouvelles offres detectees. >> logs\\log.txt
                         copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
@@ -59,7 +56,7 @@ pipeline {
             }
         }
 
-        stage('Générer HTML') {
+        stage('Generer HTML') {
             steps {
                 bat 'python html_generator.py'
             }
@@ -74,7 +71,7 @@ pipeline {
 
     post {
         always {
-            echo " Pipeline terminé localement"
+            echo "Pipeline terminé localement"
         }
     }
 }
