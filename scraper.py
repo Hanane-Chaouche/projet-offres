@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+from pathlib import Path
 
 headers = {
     "User-Agent": (
@@ -9,7 +10,6 @@ headers = {
         "Chrome/114.0.0.0 Safari/537.36"
     )
 }
-
 
 def scrape_hackernews():
     url = "https://news.ycombinator.com/jobs"
@@ -30,7 +30,6 @@ def scrape_hackernews():
         print("Erreur HackerNews:", e)
     return offers
 
-
 def scrape_python_jobs():
     url = "https://www.python.org/jobs/"
     offers = []
@@ -50,7 +49,6 @@ def scrape_python_jobs():
     except Exception as e:
         print("Erreur Python.org:", e)
     return offers
-
 
 def scrape_jsremotely():
     url = "https://jsremotely.com/"
@@ -73,24 +71,25 @@ def scrape_jsremotely():
         print("Erreur JSRemotely:", e)
     return offers
 
-
 def scrape_remotive():
     url = "https://remotive.io/api/remote-jobs?category=software-dev"
     offers = []
     try:
         res = requests.get(url, headers=headers, timeout=10)
-        jobs = res.json()["jobs"]
-        for job in jobs:
-            offers.append({
-                "Source": "Remotive",
-                "Titre": job["title"],
-                "Entreprise": job["company_name"],
-                "Lien": job["url"]
-            })
+        if res.status_code == 200:
+            jobs = res.json().get("jobs", [])
+            for job in jobs:
+                offers.append({
+                    "Source": "Remotive",
+                    "Titre": job["title"],
+                    "Entreprise": job["company_name"],
+                    "Lien": job["url"]
+                })
+        else:
+            print("Erreur Remotive: statut", res.status_code)
     except Exception as e:
         print("Erreur Remotive:", e)
     return offers
-
 
 def scrape_workingnomads():
     url = "https://www.workingnomads.com/jobs"
@@ -111,7 +110,6 @@ def scrape_workingnomads():
     except Exception as e:
         print("Erreur WorkingNomads:", e)
     return offers
-
 
 def scrape_authenticjobs():
     url = "https://authenticjobs.com/"
@@ -134,7 +132,6 @@ def scrape_authenticjobs():
         print("Erreur AuthenticJobs:", e)
     return offers
 
-
 def main():
     print("Scraping multi-sources en cours...\n")
 
@@ -147,11 +144,14 @@ def main():
     all_offers += scrape_authenticjobs()
 
     df = pd.DataFrame(all_offers)
+
+    # Créer automatiquement le dossier data/
+    Path("data").mkdir(parents=True, exist_ok=True)
+
+    # Enregistrer dans le bon dossier
     df.to_csv("data/jobs.csv", index=False, encoding="utf-8")
 
-    print(f"\nFichier jobs.csv généré avec {len(df)} offres d'emploi.")
-    if not df.empty:
-      print(df.head(10))
+    print(f"\n Fichier jobs.csv généré avec {len(df)} offres d'emploi.")
 
-
-main()
+if __name__ == "__main__":
+    main()
