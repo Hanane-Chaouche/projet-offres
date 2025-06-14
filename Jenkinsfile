@@ -78,7 +78,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline terminé localement ✅"
+            echo "Pipeline terminé localement"
         }
     }
 }
