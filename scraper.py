@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from pathlib import Path
+import os
 
 headers = {
     "User-Agent": (
@@ -144,6 +145,10 @@ def main():
     all_offers += scrape_authenticjobs()
 
     df = pd.DataFrame(all_offers)
+    data_path = Path("data")
+    # Si "data" existe déjà sous forme de fichier, on le supprime
+    if data_path.exists() and not data_path.is_dir():
+        os.remove(data_path)
 
     # Créer automatiquement le dossier data/
     Path("data").mkdir(parents=True, exist_ok=True)
