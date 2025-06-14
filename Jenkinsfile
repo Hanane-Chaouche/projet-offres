@@ -21,12 +21,18 @@ pipeline {
                         mkdir logs
                     )
 
+                    rem -- Créer l’en-tête si log.txt n’existe pas
+                    if not exist logs\\log.txt (
+                        echo ===== Journal du pipeline Jenkins =====> logs\\log.txt
+                    )
+
                     if not exist data\\jobs_previous.csv (
-                        echo Première exécution : copie initiale > logs\\log.txt
+                        echo [%date% %time%] Première exécution : copie initiale >> logs\\log.txt
                         copy data\\jobs.csv data\\jobs_previous.csv
                         exit /b 0
                     )
 
+                    rem -- Calcul des empreintes SHA256
                     certutil -hashfile data\\jobs.csv SHA256 > new_hash.txt
                     certutil -hashfile data\\jobs_previous.csv SHA256 > old_hash.txt
 
@@ -39,6 +45,7 @@ pipeline {
                     ) else (
                         echo [%date% %time%] Nouvelles offres détectées. >> logs\\log.txt
                         copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
+                        echo [%date% %time%] Rapport HTML mis à jour. >> logs\\log.txt
                     )
                 '''
             }
