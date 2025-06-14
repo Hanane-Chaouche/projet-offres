@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-def generate_html(input_csv="jobs.csv", output_html="public/index.html"):
+def generate_html(input_csv="data/jobs.csv", output_html="public/index.html"):
     # Lire les offres depuis le fichier CSV
     df = pd.read_csv(input_csv)
 
@@ -42,4 +42,3 @@ def generate_html(input_csv="jobs.csv", output_html="public/index.html"):
 # Lancer automatiquement si on exécute le script
 if __name__ == "__main__":
     generate_html()
-
