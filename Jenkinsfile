@@ -8,22 +8,6 @@ pipeline {
             }
         }
 
-        stage('Préparer les dossiers') {
-            steps {
-                bat '''
-                    if not exist data (
-                        mkdir data
-                    )
-                    if not exist logs (
-                        mkdir logs
-                    )
-                    if not exist public (
-                        mkdir public
-                    )
-                '''
-            }
-        }
-
         stage('Scraper les offres') {
             steps {
                 bat 'python scraper.py'
@@ -33,6 +17,14 @@ pipeline {
         stage('Détection de changements') {
             steps {
                 bat '''
+                    rem -- Créer les dossiers si nécessaires
+                    if not exist data (
+                        mkdir data
+                    )
+                    if not exist logs (
+                        mkdir logs
+                    )
+
                     rem -- Créer un en-tête si log.txt n’existe pas
                     if not exist logs\\log.txt (
                         echo ===== Journal du pipeline Jenkins ===== > logs\\log.txt
@@ -79,7 +71,7 @@ pipeline {
 
     post {
         always {
-            echo " Pipeline terminé localement"
+            echo "✅ Pipeline terminé localement"
         }
     }
 }
