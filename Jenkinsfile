@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Installer les dependances') {
+        stage('Installer les dépendances') {
             steps {
                 bat 'pip install -r requirements.txt'
             }
@@ -16,8 +16,8 @@ pipeline {
                     if not exist logs mkdir logs
                     if not exist public mkdir public
 
-                    rem Attente pour que les dossiers soient prêts
-                    timeout /t 2 >nul
+                    rem Attente fiable via ping
+                    ping 127.0.0.1 -n 4 >nul
                 '''
             }
         }
