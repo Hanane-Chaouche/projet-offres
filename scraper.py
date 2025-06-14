@@ -151,7 +151,7 @@ def main():
 
     print(f"\nFichier jobs.csv généré avec {len(df)} offres d'emploi.")
     if not df.empty:
-        display(df.head(10))
+      print(df.head(10))
 
 
 main()
