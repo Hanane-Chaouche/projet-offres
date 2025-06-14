@@ -11,46 +11,50 @@ pipeline {
         stage('Préparer les dossiers') {
             steps {
                 bat '''
-                    echo Dossier courant : %cd%
-                    if not exist "%cd%\\data" mkdir "%cd%\\data"
-                    if not exist "%cd%\\logs" mkdir "%cd%\\logs"
-                    if not exist "%cd%\\public" mkdir "%cd%\\public"
-
-                    rem Attente fiable via ping
-                    ping 127.0.0.1 -n 4 >nul
+                    cd /d "%WORKSPACE%"
+                    mkdir data 2>nul || echo Le dossier data existe déjà.
+                    mkdir logs 2>nul || echo Le dossier logs existe déjà.
+                    mkdir public 2>nul || echo Le dossier public existe déjà.
+                    ping 127.0.0.1 -n 3 >nul
                 '''
             }
         }
 
         stage('Scraper les offres') {
             steps {
-                bat 'python scraper.py'
+                bat '''
+                    cd /d "%WORKSPACE%"
+                    python scraper.py
+                '''
             }
         }
 
         stage('Détection de changements') {
             steps {
                 bat '''
-                    if not exist "%cd%\\logs\\log.txt" echo ===== Journal du pipeline Jenkins ===== > "%cd%\\logs\\log.txt"
+                    cd /d "%WORKSPACE%"
+                    if not exist logs\\log.txt (
+                        echo ===== Journal du pipeline Jenkins ===== > logs\\log.txt
+                    )
 
-                    if not exist "%cd%\\data\\jobs_previous.csv" (
-                        echo [%date% %time%] Premiere execution : copie initiale >> "%cd%\\logs\\log.txt"
-                        copy "%cd%\\data\\jobs.csv" "%cd%\\data\\jobs_previous.csv"
+                    if not exist data\\jobs_previous.csv (
+                        echo [%date% %time%] Premiere execution : copie initiale >> logs\\log.txt
+                        copy data\\jobs.csv data\\jobs_previous.csv
                         exit /b 0
                     )
 
-                    certutil -hashfile "%cd%\\data\\jobs.csv" SHA256 > "%cd%\\new_hash.txt"
-                    certutil -hashfile "%cd%\\data\\jobs_previous.csv" SHA256 > "%cd%\\old_hash.txt"
+                    certutil -hashfile data\\jobs.csv SHA256 > new_hash.txt
+                    certutil -hashfile data\\jobs_previous.csv SHA256 > old_hash.txt
 
-                    for /f "tokens=1" %%A in (%cd%\\new_hash.txt) do set NEW_HASH=%%A
-                    for /f "tokens=1" %%A in (%cd%\\old_hash.txt) do set OLD_HASH=%%A
+                    for /f "tokens=1" %%A in (new_hash.txt) do set NEW_HASH=%%A
+                    for /f "tokens=1" %%A in (old_hash.txt) do set OLD_HASH=%%A
 
                     if "%NEW_HASH%" == "%OLD_HASH%" (
-                        echo [%date% %time%] Aucune nouvelle offre detectee. >> "%cd%\\logs\\log.txt"
+                        echo [%date% %time%] Aucune nouvelle offre detectee. >> logs\\log.txt
                     ) else (
-                        echo [%date% %time%] Nouvelles offres detectees. >> "%cd%\\logs\\log.txt"
-                        copy /Y "%cd%\\data\\jobs.csv" "%cd%\\data\\jobs_previous.csv" >nul
-                        echo [%date% %time%] Rapport HTML mis a jour. >> "%cd%\\logs\\log.txt"
+                        echo [%date% %time%] Nouvelles offres detectees. >> logs\\log.txt
+                        copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
+                        echo [%date% %time%] Rapport HTML mis a jour. >> logs\\log.txt
                     )
                 '''
             }
@@ -58,7 +62,10 @@ pipeline {
 
         stage('Generer HTML') {
             steps {
-                bat 'python html_generator.py'
+                bat '''
+                    cd /d "%WORKSPACE%"
+                    python html_generator.py
+                '''
             }
         }
 
@@ -71,7 +78,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline terminé localement"
+            echo "Pipeline terminé localement ✅"
         }
     }
 }
