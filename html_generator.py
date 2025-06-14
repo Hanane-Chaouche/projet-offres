@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+import os
 
 def generate_html(input_csv="data/jobs.csv", output_html="public/index.html"):
     # Lire les offres depuis le fichier CSV
@@ -32,6 +33,9 @@ def generate_html(input_csv="data/jobs.csv", output_html="public/index.html"):
 </body>
 </html>
 """
+    if os.path.exists("public") and not os.path.isdir("public"):
+        os.remove("public")
+    Path("public").mkdir(parents=True, exist_ok=True)
 
     # Écrire le HTML dans public/index.html
     with open(output_html, "w", encoding="utf-8") as f:
