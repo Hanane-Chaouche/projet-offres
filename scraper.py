@@ -147,7 +147,7 @@ def main():
     all_offers += scrape_authenticjobs()
 
     df = pd.DataFrame(all_offers)
-    df.to_csv("jobs.csv", index=False, encoding="utf-8")
+    df.to_csv("data/jobs.csv", index=False, encoding="utf-8")
 
     print(f"\nFichier jobs.csv généré avec {len(df)} offres d'emploi.")
     if not df.empty:
