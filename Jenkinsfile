@@ -1,95 +1,123 @@
 pipeline {
     agent any
 
+    environment {
+        VENV_DIR = 'venv'
+        JOBS_CSV = 'data/jobs.csv'
+        PREV_CSV = 'data/jobs_previous.csv'
+        HTML_OUT = 'public/index.html'
+        LOG_FILE = 'logs/log.txt'
+    }
+
+    triggers {
+        // Déclenchement automatique par cron toutes les 6 heures + webhook Git
+        cron('H */6 * * *')
+    }
+
     stages {
-        stage('Installer les dépendances') {
+
+        stage('Préparation') {
             steps {
-                bat 'pip install -r requirements.txt'
+                echo "Préparation des dossiers et du venv"
+                bat 'if not exist data mkdir data'
+                bat 'if not exist logs mkdir logs'
+                bat 'if not exist public mkdir public'
+                // Création d'un venv propre
+                bat 'python -m venv %VENV_DIR%'
             }
         }
 
-        stage('Préparer les dossiers') {
+        stage('Install') {
             steps {
+                echo "Activation du venv et installation des dépendances"
                 bat '''
-                    echo Dossier courant : %CD%
-                    if not exist data mkdir data
-                    if not exist logs mkdir logs
-                    if not exist public mkdir public
-                    ping 127.0.0.1 -n 3 >nul
+                    call %VENV_DIR%\\Scripts\\activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
                 '''
             }
         }
 
-        stage('Scraper les offres') {
+        stage('Scraping') {
             steps {
-                bat 'python scraper.py'
+                echo "Exécution du scraping"
+                bat 'call %VENV_DIR%\\Scripts\\activate && python scraper.py'
             }
         }
 
-        stage('Détection de changements') {
+        stage('Tests') {
             steps {
+                echo "Tests de validation sur jobs.csv et index.html"
+                // Test jobs.csv ≥ 10 lignes
                 bat '''
-                    cd /d "%WORKSPACE%"
-
-                    rem -- Créer les dossiers si nécessaires
-                    if not exist data (
-                        mkdir data
-                    )
-                    if not exist logs (
-                        mkdir logs
-                        ping 127.0.0.1 -n 3 >nul
-                    )
-                    if not exist public (
-                        mkdir public
-                    )
-
-                    rem -- Créer un en-tête si log.txt n’existe pas
-                    if not exist "logs\\log.txt" (
-                        echo ===== Journal du pipeline Jenkins ===== > "logs\\log.txt"
-                    )
-
-                    rem -- Si première exécution, copie initiale
-                    if not exist "data\\jobs_previous.csv" (
-                        echo [%date% %time%] Première exécution : copie initiale >> "logs\\log.txt"
-                        copy "data\\jobs.csv" "data\\jobs_previous.csv"
-                        exit /b 0
-                    )
-
-                    rem -- Calcul des empreintes SHA256
-                    certutil -hashfile "data\\jobs.csv" SHA256 > new_hash.txt
-                    certutil -hashfile "data\\jobs_previous.csv" SHA256 > old_hash.txt
-
-                    for /f "tokens=1" %%A in (new_hash.txt) do set NEW_HASH=%%A
-                    for /f "tokens=1" %%A in (old_hash.txt) do set OLD_HASH=%%A
-
-                    if "%NEW_HASH%" == "%OLD_HASH%" (
-                        echo [%date% %time%] Aucune nouvelle offre détectée. >> "logs\\log.txt"
-                        exit /b 0
-                    ) else (
-                        echo [%date% %time%] Nouvelles offres détectées. >> "logs\\log.txt"
-                        copy /Y "data\\jobs.csv" "data\\jobs_previous.csv" >nul
-                        echo [%date% %time%] Rapport HTML mis à jour. >> "logs\\log.txt"
+                    for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
+                    if %NB_LINES% LSS 10 (
+                        echo Echec : jobs.csv a moins de 10 lignes!
+                        exit /b 1
                     )
                 '''
             }
         }
 
-        stage('Générer HTML') {
+        stage('DetectChanges') {
             steps {
-                bat 'python html_generator.py'
+                echo "Détection de changements entre jobs.csv et jobs_previous.csv"
+                bat '''
+                    if exist %PREV_CSV% (
+                        certutil -hashfile %JOBS_CSV% SHA256 > new_hash.txt
+                        certutil -hashfile %PREV_CSV% SHA256 > old_hash.txt
+                        for /f "tokens=1" %%A in (new_hash.txt) do set NEW_HASH=%%A
+                        for /f "tokens=1" %%A in (old_hash.txt) do set OLD_HASH=%%A
+                        if "%NEW_HASH%" == "%OLD_HASH%" (
+                            echo [%date% %time%] Aucune nouvelle offre. >> %LOG_FILE%
+                            exit /b 0
+                        )
+                    )
+                    copy /Y %JOBS_CSV% %PREV_CSV% >nul
+                '''
             }
         }
 
-        stage('Archiver') {
+        stage('Conversion HTML') {
             steps {
+                echo "Conversion CSV → HTML"
+                bat 'call %VENV_DIR%\\Scripts\\activate && python html_generator.py'
+                // Test présence <table> et au moins 10 lignes
+                bat '''
+                    findstr /C:"<table" %HTML_OUT% >nul || (echo Echec : pas de <table> et exit /b 1)
+                    find /c "<tr" %HTML_OUT% > lines.txt
+                    for /f "delims=:" %%A in (lines.txt) do set NBTR=%%A
+                    if %NBTR% LSS 11 (
+                        echo Echec : index.html a moins de 10 lignes de données!
+                        exit /b 1
+                    )
+                '''
+            }
+        }
+
+        stage('Archive') {
+            steps {
+                echo "Archivage Jenkins"
                 archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, logs/log.txt', fingerprint: true
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo "Déploiement sur GitHub Pages (exemple)"
+                // Mets ici la commande adaptée à TON choix (par ex. push sur gh-pages, scp, aws s3 cp...)
+                // bat 'call deploy.bat' ou sh 'sh deploy.sh' si tu ajoutes un script de déploiement
             }
         }
     }
 
     post {
         always {
-            echo "✅ Pipeline terminé localement"
+            echo "Nettoyage de l'environnement virtuel"
+            bat 'rmdir /s /q %VENV_DIR% || exit 0'
+        }
+        failure {
+            echo 'Le pipeline a échoué. Consultez les logs.'
         }
     }
 }
