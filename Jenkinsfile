@@ -110,7 +110,7 @@ pipeline {
             bat 'rmdir /s /q %VENV_DIR% || exit 0'
         }
         failure {
-            echo 'Le pipeline a échoué. Consultez les logs.'
+            echo 'Le pipeline a Ã©chouÃ©. Consultez les logs.'
         }
     }
 }
