@@ -102,7 +102,16 @@ pipeline {
                 echo "Conversion CSV → HTML"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python html_generator.py'
                 bat '''
+                    REM Affiche le contenu du dossier public pour debug
+                    dir public
+                    REM Vérifie la présence du fichier HTML généré
+                    if not exist %HTML_OUT% (
+                        echo Echec : index.html n'a pas été généré!
+                        exit /b 1
+                    )
+                    REM Vérifie la présence d'une table dans le HTML
                     findstr /C:"<table" %HTML_OUT% >nul || (echo Echec : pas de <table> et exit /b 1)
+                    REM Compte le nombre de lignes de table
                     find /c "<tr" %HTML_OUT% > lines.txt
                     for /f %%A in (lines.txt) do set NBTR=%%A
                     if %NBTR% LSS 11 (
@@ -123,7 +132,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Déploiement sur VPS via pscp"
-                // Assure-toi que la clé est bien trouvée, format .ppk ou compatible cible
                 bat '"%PSCP_PATH%" -i %SSH_KEY% -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%'
             }
         }
