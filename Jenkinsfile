@@ -13,7 +13,8 @@ pipeline {
         VPS_PATH   = '/var/www/html/index.html'
     }
 
-    stages {   
+    stages { // <-- AJOUT ICI !
+
         stage('Install') {
             steps {
                 echo "Activation du venv et installation des dépendances"
@@ -148,7 +149,7 @@ pipeline {
                 """
             }
         }
-    }   // <-- ICI on ferme "stages"
+    } // <-- FERMETURE du bloc stages
 
     post {
         always {
