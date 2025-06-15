@@ -57,7 +57,7 @@ pipeline {
                 bat '''
                     setlocal enabledelayedexpansion
                     if not exist %PREV_CSV% (
-                        copy %JOBS_CSV% %PREV_CSV% >nul
+                        copy %JOBS_CSV% %PREV_CSV% 
                         echo [%date% %time%] Première exécution, création jobs_previous.csv >> %LOG_FILE%
                         endlocal
                         exit /b 0
