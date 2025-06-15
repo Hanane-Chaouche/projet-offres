@@ -9,7 +9,7 @@ pipeline {
         LOG_FILE = 'logs/log.txt'
         DEPLOY_TARGET = '/var/www/html/index.html'
         REMOTE_HOST = 'root@138.197.171.64' // <-- Mets ici l’IP/nom de ton VPS
-        SSH_KEY = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
+        SSH_KEY = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean.ppk'
         PSCP_PATH = 'C:\\Users\\chame\\pscp.exe' // Mets le bon chemin de pscp.exe
     }
 
