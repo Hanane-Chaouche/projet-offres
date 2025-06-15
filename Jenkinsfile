@@ -13,16 +13,7 @@ pipeline {
         VPS_PATH   = '/var/www/html/index.html'
     }
 
-    stages {
-        stage('Prepare') {
-            steps {
-                echo "Création des dossiers et du venv"
-                bat 'if not exist data mkdir data'
-                bat 'if not exist logs mkdir logs'
-                bat 'if not exist public mkdir public'
-                bat 'python -m venv %VENV_DIR%'
-            }
-        }
+    
         stage('Install') {
             steps {
                 echo "Activation du venv et installation des dépendances"
