@@ -42,20 +42,23 @@ pipeline {
         stage('Tests CSV') {
             steps {
                 echo "Validation du fichier jobs.csv"
-                bat """
+                bat '''
                     setlocal enabledelayedexpansion
                     if exist %JOBS_CSV% (
-                        for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
-                        if %NB_LINES% LSS 10 (
-                            echo Echec : jobs.csv a moins de 10 lignes!
-                            exit /b 1
+                        for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do (
+                            set NB_LINES=%%A
+                            echo Lignes trouvées : !NB_LINES!
+                            if !NB_LINES! LSS 10 (
+                                echo Echec : jobs.csv a moins de 10 lignes!
+                                exit /b 1
+                            )
                         )
                     ) else (
                         echo Echec : jobs.csv introuvable!
                         exit /b 1
                     )
                     endlocal
-                """
+                '''
             }
         }
         stage('DetectChanges') {
