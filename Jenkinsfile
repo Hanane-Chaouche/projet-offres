@@ -5,8 +5,8 @@ pipeline {
         VENV_DIR   = 'venv'
         JOBS_CSV   = 'data/jobs.csv'
         PREV_CSV   = 'data/jobs_previous.csv'
-        HTML_FILE  = 'public/index.html'
-        LOG_FILE   = 'logs/log.txt'
+        HTML_FILE  = 'public\\index.html' // antislash Windows partout
+        LOG_FILE   = 'logs\\log.txt'
         SSH_KEY_PATH = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
         VPS_USER   = 'root'
         VPS_HOST   = '138.197.171.64'
@@ -26,11 +26,11 @@ pipeline {
         stage('Install') {
             steps {
                 echo "Activation du venv et installation des dépendances"
-                bat '''
+                bat """
                     call %VENV_DIR%\\Scripts\\activate
-                    pip install --upgrade pip
+                    python -m pip install --upgrade pip
                     pip install -r requirements.txt
-                '''
+                """
             }
         }
         stage('Scraping') {
@@ -42,22 +42,27 @@ pipeline {
         stage('Tests CSV') {
             steps {
                 echo "Validation du fichier jobs.csv"
-                bat '''
-                    for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
-                    if %NB_LINES% LSS 10 (
-                        echo Echec : jobs.csv a moins de 10 lignes!
+                bat """
+                    if exist %JOBS_CSV% (
+                        for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
+                        if %NB_LINES% LSS 10 (
+                            echo Echec : jobs.csv a moins de 10 lignes!
+                            exit /b 1
+                        )
+                    ) else (
+                        echo Echec : jobs.csv introuvable!
                         exit /b 1
                     )
-                '''
+                """
             }
         }
         stage('DetectChanges') {
             steps {
                 echo "Détection de changements"
-                bat '''
+                bat """
                     setlocal enabledelayedexpansion
                     if not exist %PREV_CSV% (
-                        copy %JOBS_CSV% %PREV_CSV% 
+                        copy %JOBS_CSV% %PREV_CSV% >nul
                         echo [%date% %time%] Première exécution, création jobs_previous.csv >> %LOG_FILE%
                         endlocal
                         exit /b 0
@@ -80,7 +85,7 @@ pipeline {
                     copy /Y %JOBS_CSV% %PREV_CSV% >nul
                     endlocal
                     exit /b 0
-                '''
+                """
             }
         }
         stage('Conversion HTML') {
@@ -92,7 +97,13 @@ pipeline {
         stage('Validate HTML') {
             steps {
                 echo "Validation de la structure du HTML (batch Windows)"
-                bat '''
+                bat """
+                    if exist %HTML_FILE% (
+                        echo OK: index.html trouvé
+                    ) else (
+                        echo Echec : index.html introuvable!
+                        exit /b 1
+                    )
                     findstr /C:"<table" %HTML_FILE% >nul
                     if errorlevel 1 (
                         echo Echec : pas de <table> dans index.html
@@ -108,7 +119,7 @@ pipeline {
                         echo Echec : index.html a moins de 10 lignes de donnees !
                         exit /b 1
                     )
-                '''
+                """
             }
         }
         stage('Archive') {
@@ -119,12 +130,22 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                echo "Déploiement sur VPS via pscp"
-                bat '''
-                    if exist "%SSH_KEY_PATH%" (echo OK: ssh key  trouvé) else (echo ERREUR: pscp introuvable! & exit /b 1)
-                    if exist "%HTML_FILE%" (echo OK: index.html trouvé) else (echo ERREUR: index.html introuvable! & exit /b 1)
+                echo "Déploiement sur VPS via scp"
+                bat """
+                    if exist "%SSH_KEY_PATH%" (
+                        echo OK: clé SSH trouvée
+                    ) else (
+                        echo ERREUR: clé SSH introuvable!
+                        exit /b 1
+                    )
+                    if exist "%HTML_FILE%" (
+                        echo OK: index.html trouvé
+                    ) else (
+                        echo ERREUR: index.html introuvable!
+                        exit /b 1
+                    )
                     scp -i "%SSH_KEY_PATH%" -o StrictHostKeyChecking=no %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
-                '''
+                """
             }
         }
     }
