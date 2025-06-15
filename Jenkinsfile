@@ -10,7 +10,7 @@ pipeline {
         DEPLOY_TARGET = '/var/www/html/index.html'
         REMOTE_HOST = 'root@138.197.171.64'
         SSH_KEY = 'id_ed25519_digitalocean'
-        PSCP_PATH = 'pscp.exe' // adapte si nécessaire (met le chemin complet sinon)
+        PSCP_PATH = 'pscp.exe' // Mets le chemin absolu si besoin
     }
 
     stages {
@@ -30,7 +30,7 @@ pipeline {
                 echo "Activation du venv et installation des dépendances"
                 bat '''
                     call %VENV_DIR%\\Scripts\\activate
-                    pip install --upgrade pip
+                    python -m pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
             }
@@ -60,17 +60,27 @@ pipeline {
             steps {
                 echo "Détection de changements entre jobs.csv et jobs_previous.csv"
                 bat '''
+                    setlocal enabledelayedexpansion
                     if exist %PREV_CSV% (
                         certutil -hashfile %JOBS_CSV% SHA256 > new_hash.txt
                         certutil -hashfile %PREV_CSV% SHA256 > old_hash.txt
-                        for /f "tokens=1" %%A in (new_hash.txt) do set NEW_HASH=%%A
-                        for /f "tokens=1" %%A in (old_hash.txt) do set OLD_HASH=%%A
-                        if "%NEW_HASH%" == "%OLD_HASH%" (
+                        set NEW_HASH=
+                        set OLD_HASH=
+                        for /f "skip=1 tokens=1" %%A in (new_hash.txt) do (
+                            if not defined NEW_HASH set NEW_HASH=%%A
+                        )
+                        for /f "skip=1 tokens=1" %%A in (old_hash.txt) do (
+                            if not defined OLD_HASH set OLD_HASH=%%A
+                        )
+                        echo NEW_HASH=!NEW_HASH!
+                        echo OLD_HASH=!OLD_HASH!
+                        if "!NEW_HASH!" == "!OLD_HASH!" (
                             echo [%date% %time%] Aucune nouvelle offre. >> %LOG_FILE%
                             exit /b 0
                         )
                     )
                     copy /Y %JOBS_CSV% %PREV_CSV% >nul
+                    endlocal
                 '''
             }
         }
@@ -82,7 +92,7 @@ pipeline {
                 bat '''
                     findstr /C:"<table" %HTML_OUT% >nul || (echo Echec : pas de <table> et exit /b 1)
                     find /c "<tr" %HTML_OUT% > lines.txt
-                    for /f "delims=:" %%A in (lines.txt) do set NBTR=%%A
+                    for /f %%A in (lines.txt) do set NBTR=%%A
                     if %NBTR% LSS 11 (
                         echo Echec : index.html a moins de 10 lignes de données!
                         exit /b 1
@@ -101,8 +111,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Déploiement sur VPS via pscp"
-                // La clé privée doit être au format PuTTY ou OpenSSH (ed25519 fonctionne)
-                bat '"%PSCP_PATH%" -i %SSH_KEY% -pw "" -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%'
+                // Assure-toi que la clé est bien trouvée, format .ppk ou compatible cible
+                bat '"%PSCP_PATH%" -i %SSH_KEY% -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%'
             }
         }
     }
