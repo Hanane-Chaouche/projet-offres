@@ -7,11 +7,10 @@ pipeline {
         PREV_CSV = 'data/jobs_previous.csv'
         HTML_OUT = 'public/index.html'
         LOG_FILE = 'logs/log.txt'
-    }
-
-    triggers {
-        // Déclenchement automatique par cron toutes les 6 heures + webhook Git
-        cron('H */6 * * *')
+        DEPLOY_TARGET = '/var/www/html/index.html'
+        REMOTE_HOST = 'root@138.197.171.64'
+        SSH_KEY = 'id_ed25519_digitalocean'
+        PSCP_PATH = 'pscp.exe' // adapte si nécessaire (met le chemin complet sinon)
     }
 
     stages {
@@ -22,7 +21,6 @@ pipeline {
                 bat 'if not exist data mkdir data'
                 bat 'if not exist logs mkdir logs'
                 bat 'if not exist public mkdir public'
-                // Création d'un venv propre
                 bat 'python -m venv %VENV_DIR%'
             }
         }
@@ -48,7 +46,6 @@ pipeline {
         stage('Tests') {
             steps {
                 echo "Tests de validation sur jobs.csv et index.html"
-                // Test jobs.csv ≥ 10 lignes
                 bat '''
                     for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
                     if %NB_LINES% LSS 10 (
@@ -82,7 +79,6 @@ pipeline {
             steps {
                 echo "Conversion CSV → HTML"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python html_generator.py'
-                // Test présence <table> et au moins 10 lignes
                 bat '''
                     findstr /C:"<table" %HTML_OUT% >nul || (echo Echec : pas de <table> et exit /b 1)
                     find /c "<tr" %HTML_OUT% > lines.txt
@@ -104,9 +100,9 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo "Déploiement sur GitHub Pages (exemple)"
-                // Mets ici la commande adaptée à TON choix (par ex. push sur gh-pages, scp, aws s3 cp...)
-                // bat 'call deploy.bat' ou sh 'sh deploy.sh' si tu ajoutes un script de déploiement
+                echo "Déploiement sur VPS via pscp"
+                // La clé privée doit être au format PuTTY ou OpenSSH (ed25519 fonctionne)
+                bat '"%PSCP_PATH%" -i %SSH_KEY% -pw "" -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%'
             }
         }
     }
