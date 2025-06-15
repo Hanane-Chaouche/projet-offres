@@ -17,6 +17,7 @@ pipeline {
 
         stage('Prepare') {
             steps {
+                echo "Création des dossiers et du venv"
                 bat 'if not exist data mkdir data'
                 bat 'if not exist logs mkdir logs'
                 bat 'if not exist public mkdir public'
@@ -26,6 +27,7 @@ pipeline {
 
         stage('Install') {
             steps {
+                echo "Activation du venv et installation des dépendances"
                 bat '''
                     call %VENV_DIR%\\Scripts\\activate
                     python -m pip install --upgrade pip
@@ -36,12 +38,14 @@ pipeline {
 
         stage('Scraping') {
             steps {
+                echo "Exécution du scraping"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python scraper.py'
             }
         }
 
-        stage('Tests') {
+        stage('Tests CSV') {
             steps {
+                echo "Validation du fichier jobs.csv"
                 bat '''
                     for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
                     if %NB_LINES% LSS 10 (
@@ -54,6 +58,7 @@ pipeline {
 
         stage('DetectChanges') {
             steps {
+                echo "Détection de changements"
                 bat '''
                     setlocal enabledelayedexpansion
                     if exist %PREV_CSV% (
@@ -82,24 +87,40 @@ pipeline {
 
         stage('Conversion HTML') {
             steps {
+                echo "Conversion CSV → HTML"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python html_generator.py'
             }
         }
 
         stage('Validate HTML') {
             steps {
-                bat 'call %VENV_DIR%\\Scripts\\activate && python validate_html.py'
+                echo "Validation de la structure du HTML (batch Windows)"
+                bat '''
+                    findstr /C:"<table" public\\index.html >nul
+                    if errorlevel 1 (
+                        echo Echec : pas de <table> dans index.html
+                        exit /b 1
+                    )
+                    find /c "<tr" public\\index.html > lines.txt
+                    for /f %%A in (lines.txt) do set NBTR=%%A
+                    if %NBTR% LSS 10 (
+                        echo Echec : index.html a moins de 10 lignes de donnees !
+                        exit /b 1
+                    )
+                '''
             }
         }
 
         stage('Archive') {
             steps {
+                echo "Archivage Jenkins"
                 archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, logs/log.txt', fingerprint: true
             }
         }
 
         stage('Deploy') {
             steps {
+                echo "Déploiement sur VPS via pscp"
                 bat '"%PSCP_PATH%" -i %SSH_KEY% -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%'
             }
         }
@@ -107,10 +128,11 @@ pipeline {
 
     post {
         always {
+            echo "Nettoyage de l'environnement virtuel"
             bat 'rmdir /s /q %VENV_DIR% || exit 0'
         }
         failure {
-            echo 'Le pipeline a Ã©chouÃ©. Consultez les logs.'
+            echo 'Le pipeline a échoué. Consultez les logs.'
         }
     }
 }
