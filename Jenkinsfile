@@ -7,14 +7,13 @@ pipeline {
         PREV_CSV = 'data/jobs_previous.csv'
         HTML_OUT = 'public/index.html'
         LOG_FILE = 'logs/log.txt'
-        DEPLOY_TARGET = '/var/www/html/index.html'
-        REMOTE_HOST = 'root@138.197.171.64' // <-- Mets ici l’IP/nom de ton VPS
+        PSCP_PATH = 'C:\\Users\\chame\\pscp.exe'
         SSH_KEY = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
-        PSCP_PATH = 'C:\\Program Files\\PuTTY\\pscp.exe' // Mets le bon chemin de pscp.exe
+        REMOTE_HOST = 'root@138.197.171.64'
+        DEPLOY_TARGET = '/var/www/html/index.html'
     }
 
     stages {
-
         stage('Prepare') {
             steps {
                 echo "Création des dossiers et du venv"
@@ -47,7 +46,7 @@ pipeline {
             steps {
                 echo "Validation du fichier jobs.csv"
                 bat '''
-                    for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
+                    for /F %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
                     if %NB_LINES% LSS 10 (
                         echo Echec : jobs.csv a moins de 10 lignes!
                         exit /b 1
@@ -66,10 +65,10 @@ pipeline {
                         certutil -hashfile %PREV_CSV% SHA256 > old_hash.txt
                         set NEW_HASH=
                         set OLD_HASH=
-                        for /f "skip=1 tokens=1" %%A in (new_hash.txt) do (
+                        for /F "skip=1 tokens=1" %%A in (new_hash.txt) do (
                             if not defined NEW_HASH set NEW_HASH=%%A
                         )
-                        for /f "skip=1 tokens=1" %%A in (old_hash.txt) do (
+                        for /F "skip=1 tokens=1" %%A in (old_hash.txt) do (
                             if not defined OLD_HASH set OLD_HASH=%%A
                         )
                         if "!NEW_HASH!" == "!OLD_HASH!" (
@@ -80,7 +79,6 @@ pipeline {
                     )
                     copy /Y %JOBS_CSV% %PREV_CSV% >nul
                     endlocal
-                    exit /b 0
                 '''
             }
         }
@@ -97,17 +95,17 @@ pipeline {
                 echo "Validation de la structure du HTML (batch Windows)"
                 bat '''
                     REM Vérifie la présence de <table>
-                    findstr /C:"<table" public\\index.html >nul
+                    findstr /C:"<table" public\\index.html  1>nul
                     if errorlevel 1 (
                         echo Echec : pas de <table> dans index.html
                         exit /b 1
                     )
+
                     REM Compte le nombre de lignes <tr>
-                    find /c "<tr" public\\index.html > lines.txt
-                    type lines.txt
-                    for /f "tokens=2 delims=:" %%A in (lines.txt) do set NBTR=%%A
+                    find /c "<tr" public\\index.html  1>lines.txt
+                    for /F "tokens=2 delims=:" %%A in (lines.txt) do set NBTR=%%A
                     if not defined NBTR (
-                        echo Echec : impossible de compter les <tr> !
+                        echo Echec : impossible de compter les <tr>!
                         exit /b 1
                     )
                     if %NBTR% LSS 10 (
@@ -128,12 +126,12 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Déploiement sur VPS via pscp"
-                // Debug - affiche si chaque fichier existe
-                bat 'if exist "%PSCP_PATH%" (echo OK: pscp trouvé) else (echo ERREUR: pscp introuvable!)'
-                bat 'if exist "%SSH_KEY%" (echo OK: clé trouvée) else (echo ERREUR: clé SSH introuvable!)'
-                bat 'if exist "public\\index.html" (echo OK: index.html trouvé) else (echo ERREUR: index.html introuvable!)'
-                // Lancement du transfert
-                bat '"%PSCP_PATH%" -i %SSH_KEY% -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%'
+                bat '''
+                    if exist "%PSCP_PATH%" (echo OK: pscp trouvé) else (echo ERREUR: pscp introuvable! & exit /b 1)
+                    if exist "%SSH_KEY%" (echo OK: clé trouvée) else (echo ERREUR: clé SSH introuvable! & exit /b 1)
+                    if exist "public\\index.html" (echo OK: index.html trouvé) else (echo ERREUR: index.html introuvable! & exit /b 1)
+                    "%PSCP_PATH%" -i %SSH_KEY% -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%
+                '''
             }
         }
     }
@@ -141,7 +139,7 @@ pipeline {
     post {
         always {
             echo "Nettoyage de l'environnement virtuel"
-            bat 'rmdir /s /q %VENV_DIR% || exit 0'
+            bat 'rmdir /s /q venv || exit 0'
         }
         failure {
             echo 'Le pipeline a échoué. Consultez les logs.'
