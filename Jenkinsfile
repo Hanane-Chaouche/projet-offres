@@ -43,6 +43,7 @@ pipeline {
             steps {
                 echo "Validation du fichier jobs.csv"
                 bat """
+                    setlocal enabledelayedexpansion
                     if exist %JOBS_CSV% (
                         for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
                         if %NB_LINES% LSS 10 (
@@ -53,6 +54,7 @@ pipeline {
                         echo Echec : jobs.csv introuvable!
                         exit /b 1
                     )
+                    endlocal
                 """
             }
         }
