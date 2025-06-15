@@ -8,9 +8,9 @@ pipeline {
         HTML_OUT = 'public/index.html'
         LOG_FILE = 'logs/log.txt'
         DEPLOY_TARGET = '/var/www/html/index.html'
-        REMOTE_HOST = 'root@192.168.X.X'
-        SSH_KEY = 'C:\\chemin\\id_ed25519'
-        PSCP_PATH = 'C:\\chemin\\pscp.exe'
+        REMOTE_HOST = 'root@192.168.X.X'          // À adapter
+        SSH_KEY = 'C:\\chemin\\id_ed25519'        // À adapter
+        PSCP_PATH = 'C:\\chemin\\pscp.exe'        // À adapter
     }
 
     stages {
@@ -96,13 +96,20 @@ pipeline {
             steps {
                 echo "Validation de la structure du HTML (batch Windows)"
                 bat '''
+                    REM Vérifie la présence de <table>
                     findstr /C:"<table" public\\index.html >nul
                     if errorlevel 1 (
                         echo Echec : pas de <table> dans index.html
                         exit /b 1
                     )
+                    REM Compte le nombre de lignes <tr>
                     find /c "<tr" public\\index.html > lines.txt
-                    for /f %%A in (lines.txt) do set NBTR=%%A
+                    type lines.txt
+                    for /f "tokens=2 delims=:" %%A in (lines.txt) do set NBTR=%%A
+                    if not defined NBTR (
+                        echo Echec : impossible de compter les <tr> !
+                        exit /b 1
+                    )
                     if %NBTR% LSS 10 (
                         echo Echec : index.html a moins de 10 lignes de donnees !
                         exit /b 1
