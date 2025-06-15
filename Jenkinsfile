@@ -66,13 +66,16 @@ pipeline {
                 echo "Détection de changements"
                 bat """
                     setlocal enabledelayedexpansion
-                    if not exist logs mkdir logs
-                    if not exist %PREV_CSV% (
-                        copy %JOBS_CSV% %PREV_CSV% >nul
+                   if not exist logs mkdir logs
+                    dir
+                    dir logs
+                    if not exist data\\jobs_previous.csv (
+                        copy data\\jobs.csv data\\jobs_previous.csv >nul
                         echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs\\log.txt
                         endlocal
                         exit /b 0
                     )
+
                     certutil -hashfile %JOBS_CSV% SHA256 > new_hash.txt
                     certutil -hashfile %PREV_CSV% SHA256 > old_hash.txt
                     set NEW_HASH=
