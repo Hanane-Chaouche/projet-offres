@@ -45,7 +45,7 @@ pipeline {
 
         stage('Tests') {
             steps {
-                echo "Tests de validation sur jobs.csv et index.html"
+                echo "Tests de validation sur jobs.csv"
                 bat '''
                     for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do set NB_LINES=%%A
                     if %NB_LINES% LSS 10 (
@@ -61,26 +61,38 @@ pipeline {
                 echo "Détection de changements entre jobs.csv et jobs_previous.csv"
                 bat '''
                     setlocal enabledelayedexpansion
+
+                    REM Vérifie s'il existe déjà un fichier précédent
                     if exist %PREV_CSV% (
                         certutil -hashfile %JOBS_CSV% SHA256 > new_hash.txt
                         certutil -hashfile %PREV_CSV% SHA256 > old_hash.txt
+
                         set NEW_HASH=
                         set OLD_HASH=
+
+                        REM Extrait le hash (ignore la 1re ligne "SHA256")
                         for /f "skip=1 tokens=1" %%A in (new_hash.txt) do (
                             if not defined NEW_HASH set NEW_HASH=%%A
                         )
                         for /f "skip=1 tokens=1" %%A in (old_hash.txt) do (
                             if not defined OLD_HASH set OLD_HASH=%%A
                         )
+
                         echo NEW_HASH=!NEW_HASH!
                         echo OLD_HASH=!OLD_HASH!
+
                         if "!NEW_HASH!" == "!OLD_HASH!" (
                             echo [%date% %time%] Aucune nouvelle offre. >> %LOG_FILE%
+                            endlocal
                             exit /b 0
                         )
                     )
+
+                    REM Si changement (ou premier passage), copie
                     copy /Y %JOBS_CSV% %PREV_CSV% >nul
+
                     endlocal
+                    exit /b 0
                 '''
             }
         }
