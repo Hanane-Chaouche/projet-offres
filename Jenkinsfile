@@ -13,11 +13,18 @@ pipeline {
         VPS_PATH   = '/var/www/html/index.html'
     }
 
-    stages { // <-- AJOUT ICI !
-
+    stages {
+        // ---- >>> RAJOUT ICI <<<
+        stage('Prepare') {
+            steps {
+                echo "Création du venv"
+                bat 'python -m venv %VENV_DIR%'
+            }
+        }
+        // ---- >>> tes stages déjà présents :
         stage('Install') {
             steps {
-                echo "Activation du venv et installation des dÃ©pendances"
+                echo "Activation du venv et installation des dépendances"
                 bat """
                     call %VENV_DIR%\\Scripts\\activate
                     python -m pip install --upgrade pip
@@ -27,7 +34,7 @@ pipeline {
         }
         stage('Scraping') {
             steps {
-                echo "ExÃ©cution du scraping"
+                echo "Exécution du scraping"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python scraper.py'
             }
         }
@@ -39,7 +46,7 @@ pipeline {
                     if exist %JOBS_CSV% (
                         for /f %%A in ('find /v /c "" ^< %JOBS_CSV%') do (
                             set NB_LINES=%%A
-                            echo Lignes trouvÃ©es : !NB_LINES!
+                            echo Lignes trouvées : !NB_LINES!
                             if !NB_LINES! LSS 10 (
                                 echo Echec : jobs.csv a moins de 10 lignes!
                                 exit /b 1
@@ -55,7 +62,7 @@ pipeline {
         }
         stage('DetectChanges') {
             steps {
-                echo "DÃ©tection de changements"
+                echo "Détection de changements"
                 bat """
                     setlocal enabledelayedexpansion
                     if not exist logs mkdir logs
@@ -63,7 +70,7 @@ pipeline {
                     dir logs
                     if not exist data\\jobs_previous.csv (
                         copy data\\jobs.csv data\\jobs_previous.csv >nul
-                        echo [%date% %time%] PremiÃ¨re exÃ©cution, crÃ©ation jobs_previous.csv >> logs\\log.txt
+                        echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs\\log.txt
                         endlocal
                         exit /b 0
                     )
@@ -91,7 +98,7 @@ pipeline {
         }
         stage('Conversion HTML') {
             steps {
-                echo "Conversion CSV â†’ HTML"
+                echo "Conversion CSV → HTML"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python html_generator.py'
             }
         }
@@ -100,7 +107,7 @@ pipeline {
                 echo "Validation de la structure du HTML (batch Windows)"
                 bat """
                     if exist %HTML_FILE% (
-                        echo OK: index.html trouvÃ©
+                        echo OK: index.html trouvé
                     ) else (
                         echo Echec : index.html introuvable!
                         exit /b 1
@@ -131,16 +138,16 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                echo "DÃ©ploiement sur VPS via scp"
+                echo "Déploiement sur VPS via scp"
                 bat """
                     if exist "%SSH_KEY_PATH%" (
-                        echo OK: clÃ© SSH trouvÃ©e
+                        echo OK: clé SSH trouvée
                     ) else (
-                        echo ERREUR: clÃ© SSH introuvable!
+                        echo ERREUR: clé SSH introuvable!
                         exit /b 1
                     )
                     if exist "%HTML_FILE%" (
-                        echo OK: index.html trouvÃ©
+                        echo OK: index.html trouvé
                     ) else (
                         echo ERREUR: index.html introuvable!
                         exit /b 1
@@ -149,7 +156,7 @@ pipeline {
                 """
             }
         }
-    } // <-- FERMETURE du bloc stages
+    }
 
     post {
         always {
@@ -157,7 +164,7 @@ pipeline {
             bat 'rmdir /s /q %VENV_DIR% || exit 0'
         }
         failure {
-            echo 'Le pipeline a Ã©chouÃ©. Consultez les logs.'
+            echo 'Le pipeline a échoué. Consultez les logs.'
         }
     }
 }
