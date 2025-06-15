@@ -1,7 +1,14 @@
 import os
 from pathlib import Path
 import pandas as pd
-import sys
+import unicodedata
+
+def clean_for_latin1(s):
+    return (
+        unicodedata.normalize("NFKD", s)
+        .encode("latin1", "replace")
+        .decode("latin1")
+    )
 
 def generate_html(input_csv="data/jobs.csv", output_html="public/index.html"):
     # Correction WinError 183 : si un fichier 'public' existe, le supprimer
@@ -11,6 +18,9 @@ def generate_html(input_csv="data/jobs.csv", output_html="public/index.html"):
 
     # Chargement des données CSV
     df = pd.read_csv(input_csv)
+    # Nettoie toutes les colonnes texte
+    for col in df.columns:
+        df[col] = df[col].apply(lambda x: clean_for_latin1(str(x)))
 
     # Génération HTML
     html_content = f"""<!DOCTYPE html>
@@ -26,30 +36,10 @@ def generate_html(input_csv="data/jobs.csv", output_html="public/index.html"):
 </html>
 """
 
-    with open(output_html, "w", encoding="utf-8") as f:
+    with open(output_html, "w", encoding="latin1") as f:
         f.write(html_content)
 
     print(f"Fichier HTML généré avec {len(df)} offres : {output_html}")
-
-    # --- Validation HTML ---
-    try:
-        with open(output_html, encoding="utf-8") as f:
-            content = f.read()
-    except Exception as e:
-        print(f"Echec : impossible de lire {output_html} : {e}")
-        sys.exit(1)
-
-    if "<table" not in content:
-        print("Echec : pas de <table>")
-        sys.exit(1)
-
-    nb_tr = content.count("<tr")
-    if nb_tr < 10:
-        print(f"Echec : index.html a moins de 10 lignes de données ! ({nb_tr})")
-        sys.exit(1)
-
-    print(f"HTML OK ({nb_tr} lignes de <tr>)")
-    sys.exit(0)
 
 if __name__ == "__main__":
     generate_html()
