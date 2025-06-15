@@ -123,7 +123,7 @@ pipeline {
                 bat '''
                     if exist "%SSH_KEY_PATH%" (echo OK: ssh key  trouvé) else (echo ERREUR: pscp introuvable! & exit /b 1)
                     if exist "%HTML_FILE%" (echo OK: index.html trouvé) else (echo ERREUR: index.html introuvable! & exit /b 1)
-                    "%PSCP_PATH%" -i "%PPK_PATH%" -batch -scp %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
+                    scp -i "%SSH_KEY_PATH%" -o StrictHostKeyChecking=no %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
                 '''
             }
         }
