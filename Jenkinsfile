@@ -13,7 +13,7 @@ pipeline {
         VPS_PATH   = '/var/www/html/index.html'
     }
 
-    
+    stages {   
         stage('Install') {
             steps {
                 echo "Activation du venv et installation des dépendances"
@@ -57,7 +57,7 @@ pipeline {
                 echo "Détection de changements"
                 bat """
                     setlocal enabledelayedexpansion
-                   if not exist logs mkdir logs
+                    if not exist logs mkdir logs
                     dir
                     dir logs
                     if not exist data\\jobs_previous.csv (
@@ -148,7 +148,7 @@ pipeline {
                 """
             }
         }
-    }
+    }   // <-- ICI on ferme "stages"
 
     post {
         always {
