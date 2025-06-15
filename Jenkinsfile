@@ -8,9 +8,9 @@ pipeline {
         HTML_OUT = 'public/index.html'
         LOG_FILE = 'logs/log.txt'
         DEPLOY_TARGET = '/var/www/html/index.html'
-        REMOTE_HOST = 'root@192.168.X.X'          // À adapter
-        SSH_KEY = 'C:\\chemin\\id_ed25519'        // À adapter
-        PSCP_PATH = 'C:\\chemin\\pscp.exe'        // À adapter
+        REMOTE_HOST = 'root@138.197.171.64' // <-- Mets ici l’IP/nom de ton VPS
+        SSH_KEY = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
+        PSCP_PATH = 'C:\\Program Files\\PuTTY\\pscp.exe' // Mets le bon chemin de pscp.exe
     }
 
     stages {
@@ -128,6 +128,11 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Déploiement sur VPS via pscp"
+                // Debug - affiche si chaque fichier existe
+                bat 'if exist "%PSCP_PATH%" (echo OK: pscp trouvé) else (echo ERREUR: pscp introuvable!)'
+                bat 'if exist "%SSH_KEY%" (echo OK: clé trouvée) else (echo ERREUR: clé SSH introuvable!)'
+                bat 'if exist "public\\index.html" (echo OK: index.html trouvé) else (echo ERREUR: index.html introuvable!)'
+                // Lancement du transfert
                 bat '"%PSCP_PATH%" -i %SSH_KEY% -batch -scp public\\index.html %REMOTE_HOST%:%DEPLOY_TARGET%'
             }
         }
