@@ -69,10 +69,19 @@ pipeline {
                 bat '''
                     setlocal enabledelayedexpansion
         
-                    if exist logs (
-                        del logs >nul 2>&1
+                   
+                    REM Si 'logs' existe et c'est un dossier, on ne fait rien
+                    if exist logs\\nul (
+                        echo 'logs' est déjà un dossier, on continue...
+                    ) else (
+                        REM Sinon, si 'logs' existe et c'est un fichier, on le supprime
+                        if exist logs (
+                            del logs >nul 2>&1
+                        )
+                        REM On crée le dossier
+                        mkdir logs
                     )
-                    mkdir logs
+
 
         
                     if not exist data\\jobs_previous.csv (
