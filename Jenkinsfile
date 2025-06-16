@@ -67,14 +67,19 @@ pipeline {
             steps {
                 echo "Détection de changements"
                 bat '''
-                    if not exist logs mkdir logs
-
+                    REM Suppression du dossier logs s'il existe (fichier ou dossier)
+                    if exist logs (
+                        del logs >nul 2>&1
+                        rmdir /s /q logs >nul 2>&1
+                    )
+                    mkdir logs
+        
                     if not exist data\\jobs_previous.csv (
                         copy data\\jobs.csv data\\jobs_previous.csv >nul
                         echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs\\log.txt
                         exit /b 0
                     )
-
+        
                     certutil -hashfile data\\jobs.csv SHA256 > new_hash.txt
                     certutil -hashfile data\\jobs_previous.csv SHA256 > old_hash.txt
                     set NEW_HASH=
@@ -89,12 +94,12 @@ pipeline {
                         echo [%date% %time%] Aucune nouvelle offre. >> logs\\log.txt
                         exit /b 0
                     )
+                    echo [%date% %time%] Nouvelle offre détectée ! À consulter. >> logs\\log.txt
                     copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
                     exit /b 0
                 '''
             }
         }
-
         stage('Conversion HTML') {
             steps {
                 echo "Conversion CSV → HTML"
