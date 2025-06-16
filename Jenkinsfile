@@ -68,20 +68,11 @@ pipeline {
                 echo "Détection de changements"
                 bat '''
                     setlocal enabledelayedexpansion
-                          
-                    REM Si 'logs' existe et c'est un dossier, on ne fait rien
-                    if exist logs\\nul (
-                        echo 'logs' est déjà un dossier, on continue...
-                    ) else (
-                        REM Sinon, si 'logs' existe et c'est un fichier, on le supprime
-                        if exist logs (
-                            del logs >nul 2>&1
-                        )
-                        REM On crée le dossier
+                    
+                    REM Créer le dossier logs s'il n'existe pas, sinon continuer
+                    if not exist logs\\nul (
                         mkdir logs
                     )
-
-
         
                     if not exist data\\jobs_previous.csv (
                         copy data\\jobs.csv data\\jobs_previous.csv >nul
