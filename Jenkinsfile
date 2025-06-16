@@ -27,7 +27,7 @@ pipeline {
                 echo "Activation du venv et installation des dépendances"
                 bat """
                     call %VENV_DIR%\\Scripts\\activate
-                    python -m pip install --upgrade pip
+                    
                     pip install -r requirements.txt
                 """
             }
