@@ -7,7 +7,7 @@ pipeline {
         PREV_CSV      = 'data/jobs_previous.csv'
         HTML_FILE     = 'public\\index.html'
         LOG_FILE      = 'my-logs\\log.txt'
-        SSH_KEY_PATH  = "C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean"
+        SSH_KEY_PATH  = "C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean.ppk"
         VPS_USER      = 'root'
         VPS_HOST      = '138.197.171.64'
         VPS_PATH      = '/var/www/html/index.html'
@@ -171,7 +171,8 @@ pipeline {
                         echo ERREUR: index.html introuvable!
                         exit /b 1
                     )
-                    scp -i "%SSH_KEY_PATH%" -o StrictHostKeyChecking=no %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
+                    pscp -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
+
                 """
             }
         }
