@@ -67,11 +67,7 @@ pipeline {
             steps {
                 echo "Détection de changements"
                 bat '''
-                    if exist logs (
-                        del logs >nul 2>&1
-                        rmdir /s /q logs >nul 2>&1
-                    )
-                    mkdir logs
+                    if not exist logs mkdir logs
 
                     if not exist data\\jobs_previous.csv (
                         copy data\\jobs.csv data\\jobs_previous.csv >nul
