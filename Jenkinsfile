@@ -2,26 +2,26 @@ pipeline {
     agent any
 
     environment {
-        VENV_DIR   = 'venv'
-        JOBS_CSV   = 'data/jobs.csv'
-        PREV_CSV   = 'data/jobs_previous.csv'
-        HTML_FILE  = 'public\\index.html' // antislash Windows partout
-        LOG_FILE   = 'logs\\log.txt'
-        SSH_KEY_PATH = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
-        VPS_USER   = 'root'
-        VPS_HOST   = '138.197.171.64'
-        VPS_PATH   = '/var/www/html/index.html'
+        VENV_DIR      = 'venv'
+        JOBS_CSV      = 'data/jobs.csv'
+        PREV_CSV      = 'data/jobs_previous.csv'
+        HTML_FILE     = 'public\\index.html' // antislash Windows partout
+        LOG_FILE      = 'logs\\log.txt'
+        SSH_KEY_PATH  = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
+        VPS_USER      = 'root'
+        VPS_HOST      = '138.197.171.64'
+        VPS_PATH      = '/var/www/html/index.html'
     }
 
     stages {
-        // ---- >>> RAJOUT ICI <<<
+
         stage('Prepare') {
             steps {
                 echo "Création du venv"
                 bat 'python -m venv %VENV_DIR%'
             }
         }
-        // ---- >>> tes stages déjà présents :
+
         stage('Install') {
             steps {
                 echo "Activation du venv et installation des dépendances"
@@ -32,12 +32,14 @@ pipeline {
                 """
             }
         }
+
         stage('Scraping') {
             steps {
                 echo "Exécution du scraping"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python scraper.py'
             }
         }
+
         stage('Tests CSV') {
             steps {
                 echo "Validation du fichier jobs.csv"
@@ -60,24 +62,25 @@ pipeline {
                 '''
             }
         }
+
         stage('DetectChanges') {
             steps {
                 echo "Détection de changements"
-                bat """
-                    setlocal enabledelayedexpansion
-                    bat 'if exist logs (del logs || rmdir /s /q logs)'
-                    bat 'if not exist logs mkdir logs'
-                    dir
-                    dir logs
+                bat '''
+                    if exist logs (
+                        del logs >nul 2>&1
+                        rmdir /s /q logs >nul 2>&1
+                    )
+                    mkdir logs
+
                     if not exist data\\jobs_previous.csv (
                         copy data\\jobs.csv data\\jobs_previous.csv >nul
                         echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs\\log.txt
-                        endlocal
                         exit /b 0
                     )
 
-                    certutil -hashfile %JOBS_CSV% SHA256 > new_hash.txt
-                    certutil -hashfile %PREV_CSV% SHA256 > old_hash.txt
+                    certutil -hashfile data\\jobs.csv SHA256 > new_hash.txt
+                    certutil -hashfile data\\jobs_previous.csv SHA256 > old_hash.txt
                     set NEW_HASH=
                     set OLD_HASH=
                     for /f "skip=1 tokens=1" %%A in (new_hash.txt) do (
@@ -88,21 +91,21 @@ pipeline {
                     )
                     if "!NEW_HASH!" == "!OLD_HASH!" (
                         echo [%date% %time%] Aucune nouvelle offre. >> logs\\log.txt
-                        endlocal
                         exit /b 0
                     )
-                    copy /Y %JOBS_CSV% %PREV_CSV% >nul
-                    endlocal
+                    copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
                     exit /b 0
-                """
+                '''
             }
         }
+
         stage('Conversion HTML') {
             steps {
                 echo "Conversion CSV → HTML"
                 bat 'call %VENV_DIR%\\Scripts\\activate && python html_generator.py'
             }
         }
+
         stage('Validate HTML') {
             steps {
                 echo "Validation de la structure du HTML (batch Windows)"
@@ -131,12 +134,14 @@ pipeline {
                 """
             }
         }
+
         stage('Archive') {
             steps {
                 echo "Archivage Jenkins"
                 archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, logs/log.txt', allowEmptyArchive: false
             }
         }
+
         stage('Deploy') {
             steps {
                 echo "Déploiement sur VPS via scp"
