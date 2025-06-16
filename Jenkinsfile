@@ -18,7 +18,7 @@ pipeline {
         stage('Prepare') {
             steps {
                 echo "Création du venv"
-                bat python -m pip install --upgrade pip
+                bat 'python -m pip install --upgrade pip'
                 bat 'python -m venv %VENV_DIR%'
             }
         }
