@@ -6,7 +6,7 @@ pipeline {
         JOBS_CSV      = 'data/jobs.csv'
         PREV_CSV      = 'data/jobs_previous.csv'
         HTML_FILE     = 'public\\index.html' // antislash Windows partout
-        LOG_FILE      = 'logs\\log.txt'
+        LOG_FILE      = 'my-logs\\log.txt'
         SSH_KEY_PATH  = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
         VPS_USER      = 'root'
         VPS_HOST      = '138.197.171.64'
@@ -71,7 +71,7 @@ pipeline {
                     setlocal enabledelayedexpansion
                     
                     REM Créer le dossier logs s'il n'existe pas, sinon continuer
-                    if not exist logs\\nul (
+                    if not exist my-logs\\nul (
                         mkdir logs
                     )
         
