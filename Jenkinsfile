@@ -6,7 +6,6 @@ pipeline {
         JOBS_CSV      = 'data/jobs.csv'
         PREV_CSV      = 'data/jobs_previous.csv'
         HTML_FILE     = 'public\\index.html' // antislash Windows partout
-        LOG_FILE      = 'my-logs\\log.txt'
         SSH_KEY_PATH  = 'C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean'
         VPS_USER      = 'root'
         VPS_HOST      = '138.197.171.64'
@@ -72,12 +71,12 @@ pipeline {
                     
                     REM Créer le dossier logs s'il n'existe pas, sinon continuer
                     if not exist my-logs\\nul (
-                        mkdir logs
+                        mkdir my-logs
                     )
         
                     if not exist data\\jobs_previous.csv (
                         copy data\\jobs.csv data\\jobs_previous.csv >nul
-                        echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs\\log.txt
+                        echo [%date% %time%] Première exécution, création jobs_previous.csv >> my-logs\\log.txt
                     )
         
                     certutil -hashfile data\\jobs.csv SHA256 > new_hash.txt
@@ -91,9 +90,9 @@ pipeline {
                         if not defined OLD_HASH set OLD_HASH=%%A
                     )
                     if "!NEW_HASH!" == "!OLD_HASH!" (
-                        echo [%date% %time%] Aucune nouvelle offre. >> logs\\log.txt
+                        echo [%date% %time%] Aucune nouvelle offre. >> logs\\my-logs
                     ) else (
-                        echo [%date% %time%] Nouvelle offre détectée ! À consulter. >> logs\\log.txt
+                        echo [%date% %time%] Nouvelle offre détectée ! À consulter. >> my-logs\log.txt
                         copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
                     )
                     endlocal
@@ -141,7 +140,7 @@ pipeline {
         stage('Archive') {
             steps {
                 echo "Archivage Jenkins"
-                archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, logs/log.txt', allowEmptyArchive: false
+                archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, my-logs/log.txt', allowEmptyArchive: false
             }
         }
 
