@@ -68,8 +68,7 @@ pipeline {
                 echo "Détection de changements"
                 bat '''
                     setlocal enabledelayedexpansion
-        
-                   
+                          
                     REM Si 'logs' existe et c'est un dossier, on ne fait rien
                     if exist logs\\nul (
                         echo 'logs' est déjà un dossier, on continue...
