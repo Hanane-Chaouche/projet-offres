@@ -65,7 +65,8 @@ pipeline {
                 echo "Détection de changements"
                 bat """
                     setlocal enabledelayedexpansion
-                    if not exist logs mkdir logs
+                    bat 'if exist logs (del logs || rmdir /s /q logs)'
+                    bat 'if not exist logs mkdir logs'
                     dir
                     dir logs
                     if not exist data\\jobs_previous.csv (
