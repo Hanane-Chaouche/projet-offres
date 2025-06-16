@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        PSCP_EXE      = "C:\\Users\\chame\\pscp.exe"
         VENV_DIR      = 'venv'
         JOBS_CSV      = 'data/jobs.csv'
         PREV_CSV      = 'data/jobs_previous.csv'
@@ -171,7 +172,7 @@ pipeline {
                         echo ERREUR: index.html introuvable!
                         exit /b 1
                     )
-                    pscp -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
+                    %PSCP_EXE% -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
 
                 """
             }
