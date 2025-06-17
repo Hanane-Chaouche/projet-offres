@@ -145,7 +145,7 @@ pipeline {
         stage('Archive') {
             steps {
                 echo "Archivage Jenkins"
-                archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, logs/log.txt', allowEmptyArchive: false
+                archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, logs1/log.txt', allowEmptyArchive: false
             }
         }
 
