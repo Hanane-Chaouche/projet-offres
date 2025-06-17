@@ -7,7 +7,7 @@ import os
 import logging
 
 # Configurer le logging
-LOG_DIR = Path("logs")
+LOG_DIR = Path("logs1")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
     filename=LOG_DIR / "log.txt",
