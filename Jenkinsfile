@@ -166,7 +166,7 @@ pipeline {
                         echo ERREUR: index.html introuvable!
                         exit /b 1
                     )
-                    %PSCP_EXE% -i %SSH_KEY_PATH% -batch %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
+                    %PSCP_EXE% -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
 
                 """
             }
