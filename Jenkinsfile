@@ -9,7 +9,7 @@ pipeline {
         HTML_FILE     = 'public\\index.html'
         LOG_FILE      = 'my-logs\\log.txt'
         SSH_KEY_PATH  = "C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean"
-        VPS_USER      = 'root'
+        VPS_USER      = 'hanane'
         VPS_HOST      = '138.197.171.64'
         VPS_PATH      = '/var/www/html/index.html'
     }
@@ -172,7 +172,7 @@ pipeline {
                         echo ERREUR: index.html introuvable!
                         exit /b 1
                     )
-                    scp -i C:\Users\chame\.ssh\id_ed25519_digitalocean index.html root@138.197.171.64:/var/www/html/
+                    scp -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH% 
 
 
                 """
