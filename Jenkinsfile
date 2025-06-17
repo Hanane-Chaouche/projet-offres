@@ -2,12 +2,11 @@ pipeline {
     agent any
 
     environment {
-        PSCP_EXE      = "C:\\Users\\chame\\pscp.exe"
         VENV_DIR      = 'venv'
         JOBS_CSV      = 'data/jobs.csv'
         PREV_CSV      = 'data/jobs_previous.csv'
         HTML_FILE     = 'public\\index.html'
-        LOG_FILE      = 'my-logs\\log.txt'
+        LOG_FILE      = 'logs\\log.txt'
         SSH_KEY_PATH  = "C:\\Users\\chame\\.ssh\\id_ed25519_digitalocean"
         VPS_USER      = 'hanane'
         VPS_HOST      = '138.197.171.64'
@@ -69,25 +68,21 @@ pipeline {
                 echo "Détection de changements"
                 bat '''
                     setlocal enabledelayedexpansion
-        
-                    REM Vérifier si le dossier my-logs existe
-                    if not exist my-logs\\nul (
-                        mkdir my-logs
-        
-                        REM Vérifier si jobs_previous.csv existe
-                        if not exist data\\jobs_previous.csv (
-                            copy data\\jobs.csv data\\jobs_previous.csv >nul
-                            echo [%date% %time%] Première exécution, création jobs_previous.csv >> my-logs\\log.txt
-                            endlocal
-                            exit /b 0
-                        )
+
+                    if not exist logs\\nul (
+                        mkdir logs
                     )
-        
-                    REM Si on arrive ici, c'est que my-logs et jobs_previous.csv existent déjà
-                    REM Calcul des hash
+
+                    if not exist data\\jobs_previous.csv (
+                        copy data\\jobs.csv data\\jobs_previous.csv >nul
+                        echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs\\log.txt
+                        endlocal
+                        exit /b 0
+                    )
+
                     certutil -hashfile data\\jobs.csv SHA256 > new_hash.txt
                     certutil -hashfile data\\jobs_previous.csv SHA256 > old_hash.txt
-        
+
                     set NEW_HASH=
                     set OLD_HASH=
                     for /f "skip=1 tokens=1" %%A in (new_hash.txt) do (
@@ -96,22 +91,20 @@ pipeline {
                     for /f "skip=1 tokens=1" %%A in (old_hash.txt) do (
                         if not defined OLD_HASH set OLD_HASH=%%A
                     )
-        
+
                     if "!NEW_HASH!" == "!OLD_HASH!" (
-                        echo [%date% %time%] Aucune nouvelle offre. >> my-logs\\log.txt
+                        echo [%date% %time%] Aucune nouvelle offre. >> logs\\log.txt
                     ) else (
-                        echo [%date% %time%] Nouvelle offre détectée ! À consulter. >> my-logs\\log.txt
+                        echo [%date% %time%] Nouvelle offre détectée ! À consulter. >> logs\\log.txt
                         copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
                     )
-        
+
                     del new_hash.txt old_hash.txt
-        
                     endlocal
                     exit /b 0
                 '''
             }
         }
-
 
         stage('Conversion HTML') {
             steps {
@@ -152,7 +145,7 @@ pipeline {
         stage('Archive') {
             steps {
                 echo "Archivage Jenkins"
-                archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, my-logs/log.txt', allowEmptyArchive: false
+                archiveArtifacts artifacts: 'data/jobs.csv, data/jobs_previous.csv, public/index.html, logs/log.txt', allowEmptyArchive: false
             }
         }
 
@@ -173,8 +166,6 @@ pipeline {
                         exit /b 1
                     )
                     scp -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH% 
-
-
                 """
             }
         }
