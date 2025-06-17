@@ -7,7 +7,7 @@ pipeline {
         PREV_CSV      = 'data/jobs_previous.csv'
         HTML_FILE     = 'public\\index.html'
         LOG_FILE      = 'logs\\log.txt'
-        SSH_KEY_PATH  = "C:\\jenkins-keys\\id_ed25519_digitalocean.ppk"
+        SSH_KEY_PATH  = "C:\\ProgramData\Jenkins\.jenkins\workspace\\id_ed25519_digitalocean.ppk"
         VPS_USER      = 'hanane'
         VPS_HOST      = '138.197.171.64'
         VPS_PATH      = '/var/www/html/index.html'
@@ -166,7 +166,7 @@ pipeline {
                         echo ERREUR: index.html introuvable!
                         exit /b 1
                     )
-                    echo "%PSCP_EXE%" -i "%SSH_KEY_PATH%" -batch "%HTML_FILE%" %VPS_USER%@%VPS_HOST%:%VPS_PATH%
+                   
                     %PSCP_EXE% -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
               
 
