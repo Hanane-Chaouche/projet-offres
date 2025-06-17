@@ -11,6 +11,7 @@ pipeline {
         VPS_USER      = 'hanane'
         VPS_HOST      = '138.197.171.64'
         VPS_PATH      = '/var/www/html/index.html'
+        PSCP_EXE = 'C:\\Users\\chame\\pscp.exe'
     }
 
     stages {
@@ -165,7 +166,8 @@ pipeline {
                         echo ERREUR: index.html introuvable!
                         exit /b 1
                     )
-                    scp -i %SSH_KEY_PATH% %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH% 
+                    %PSCP_EXE% -i %SSH_KEY_PATH% -batch %HTML_FILE% %VPS_USER%@%VPS_HOST%:%VPS_PATH%
+
                 """
             }
         }
