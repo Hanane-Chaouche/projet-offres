@@ -1,10 +1,21 @@
+"Chrome/114.0.0.0 Safari/537.36"
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from pathlib import Path
 import os
+import logging
 
-headers = {
+# Configurer le logging
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    filename=LOG_DIR / "log.txt",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -12,11 +23,13 @@ headers = {
     )
 }
 
+
 def scrape_hackernews():
+    """Scrape les offres HackerNews et retourne une liste de dictionnaires."""
     url = "https://news.ycombinator.com/jobs"
     offers = []
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, "lxml")
         for row in soup.find_all("tr", class_="athing"):
             a = row.find("a")
@@ -28,14 +41,16 @@ def scrape_hackernews():
                     "Lien": "https://news.ycombinator.com/" + a["href"]
                 })
     except Exception as e:
-        print("Erreur HackerNews:", e)
+        logging.error("Erreur HackerNews: %s", e)
     return offers
 
+
 def scrape_python_jobs():
+    """Scrape les offres Python.org et retourne une liste de dictionnaires."""
     url = "https://www.python.org/jobs/"
     offers = []
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, "lxml")
         for job in soup.select(".list-recent-jobs li"):
             title = job.h2.text.strip()
@@ -48,14 +63,16 @@ def scrape_python_jobs():
                 "Lien": link
             })
     except Exception as e:
-        print("Erreur Python.org:", e)
+        logging.error("Erreur Python.org: %s", e)
     return offers
 
+
 def scrape_jsremotely():
+    """Scrape les offres JSRemotely et retourne une liste de dictionnaires."""
     url = "https://jsremotely.com/"
     offers = []
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, "lxml")
         for div in soup.find_all("div", class_="job"):
             a = div.find("a")
@@ -69,14 +86,16 @@ def scrape_jsremotely():
                     "Lien": link
                 })
     except Exception as e:
-        print("Erreur JSRemotely:", e)
+        logging.error("Erreur JSRemotely: %s", e)
     return offers
 
+
 def scrape_remotive():
+    """Scrape les offres Remotive et retourne une liste de dictionnaires."""
     url = "https://remotive.io/api/remote-jobs?category=software-dev"
     offers = []
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=HEADERS, timeout=10)
         if res.status_code == 200:
             jobs = res.json().get("jobs", [])
             for job in jobs:
@@ -87,16 +106,18 @@ def scrape_remotive():
                     "Lien": job["url"]
                 })
         else:
-            print("Erreur Remotive: statut", res.status_code)
+            logging.error("Erreur Remotive: statut %s", res.status_code)
     except Exception as e:
-        print("Erreur Remotive:", e)
+        logging.error("Erreur Remotive: %s", e)
     return offers
 
+
 def scrape_workingnomads():
+    """Scrape les offres WorkingNomads et retourne une liste de dictionnaires."""
     url = "https://www.workingnomads.com/jobs"
     offers = []
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, "lxml")
         for li in soup.select("div#jobsboard > a"):
             title = li.find("h3")
@@ -109,14 +130,16 @@ def scrape_workingnomads():
                     "Lien": "https://www.workingnomads.com" + li["href"]
                 })
     except Exception as e:
-        print("Erreur WorkingNomads:", e)
+        logging.error("Erreur WorkingNomads: %s", e)
     return offers
 
+
 def scrape_authenticjobs():
+    """Scrape les offres AuthenticJobs et retourne une liste de dictionnaires."""
     url = "https://authenticjobs.com/"
     offers = []
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, "lxml")
         for job in soup.select(".job-listing"):
             title_tag = job.find("h4")
@@ -130,11 +153,13 @@ def scrape_authenticjobs():
                     "Lien": "https://authenticjobs.com" + a_tag["href"]
                 })
     except Exception as e:
-        print("Erreur AuthenticJobs:", e)
+        logging.error("Erreur AuthenticJobs: %s", e)
     return offers
 
+
 def main():
-    print("Scraping multi-sources en cours...\n")
+    """Point d'entrée principal pour l'extraction multi-sources et l'enregistrement CSV."""
+    logging.info("Scraping multi-sources en cours...")
 
     all_offers = []
     all_offers += scrape_hackernews()
@@ -151,12 +176,13 @@ def main():
         os.remove(data_path)
 
     # Créer automatiquement le dossier data/
-    Path("data").mkdir(parents=True, exist_ok=True)
+    data_path.mkdir(parents=True, exist_ok=True)
 
     # Enregistrer dans le bon dossier
-    df.to_csv("data/jobs.csv", index=False, encoding="utf-8")
+    df.to_csv(data_path / "jobs.csv", index=False, encoding="utf-8")
 
-    print(f"\n Fichier jobs.csv généré avec {len(df)} offres d'emploi.")
+    logging.info("Fichier jobs.csv généré avec %d offres d'emploi.", len(df))
+
 
 if __name__ == "__main__":
     main()
