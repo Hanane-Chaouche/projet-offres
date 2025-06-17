@@ -69,13 +69,13 @@ pipeline {
                 bat '''
                     setlocal enabledelayedexpansion
 
-                    if not exist logs\\nul (
-                        mkdir logs
+                    if not exist logs1\\nul (
+                        mkdir logs1
                     )
 
                     if not exist data\\jobs_previous.csv (
                         copy data\\jobs.csv data\\jobs_previous.csv >nul
-                        echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs\\log.txt
+                        echo [%date% %time%] Première exécution, création jobs_previous.csv >> logs1\\log.txt
                         endlocal
                         exit /b 0
                     )
@@ -93,9 +93,9 @@ pipeline {
                     )
 
                     if "!NEW_HASH!" == "!OLD_HASH!" (
-                        echo [%date% %time%] Aucune nouvelle offre. >> logs\\log.txt
+                        echo [%date% %time%] Aucune nouvelle offre. >> logs1\\log.txt
                     ) else (
-                        echo [%date% %time%] Nouvelle offre détectée ! À consulter. >> logs\\log.txt
+                        echo [%date% %time%] Nouvelle offre détectée ! À consulter. >> logs1\\log.txt
                         copy /Y data\\jobs.csv data\\jobs_previous.csv >nul
                     )
 
