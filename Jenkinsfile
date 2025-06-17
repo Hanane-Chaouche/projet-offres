@@ -11,7 +11,7 @@ pipeline {
         VPS_USER      = 'hanane'
         VPS_HOST      = '138.197.171.64'
         VPS_PATH      = '/var/www/html/index.html'
-        PSCP_EXE = 'C:\\Users\\chame\\pscp.exe'
+        PSCP_EXE = 'C:\\jenkins-keys\\pscp.exe'
     }
 
     stages {
